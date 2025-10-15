@@ -1,0 +1,32 @@
+# Dagu server configuration for internal service
+host: 0.0.0.0
+port: 8080
+
+# Disable authentication for internal service
+auth:
+  basic:
+    enabled: false
+
+# Production paths
+paths:
+  logDir: /home/dagu/.dagu/logs
+  dagDir: /home/dagu/dags
+
+# Optional: Resource limits
+maxConcurrentRuns: 10
+
+# Optional: UI customization for internal use
+ui:
+  navbarTitle: "Cadence Events Service"
+  navbarColor: "#1976d2"
+  hideNav: false
+
+# Optional: Logging configuration
+log:
+  level: info
+  format: json
+
+# Scheduler configuration
+scheduler:
+  port: 8090  # Health check port (set to 0 to disable)
+  zombieDetectionInterval: 45s  # Check interval for zombie processes
