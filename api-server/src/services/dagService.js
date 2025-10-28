@@ -158,7 +158,7 @@ class DAGService {
     }
 
     // Validate request_type
-    const validRequestTypes = ['seat_license', 'generate_invoice'];
+    const validRequestTypes = ['seat_license', 'generate_invoice', 'seat_license_daily'];
     if (!validRequestTypes.includes(dagData.request_type)) {
       throw new DAGValidationError(`Invalid request_type. Must be one of: ${validRequestTypes.join(', ')}`);
     }
