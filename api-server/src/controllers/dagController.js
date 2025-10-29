@@ -34,7 +34,9 @@ router.post('/', validateDAGRequest, async (req, res, next) => {
 router.get('/:uuid/:requestType', validateUUID, async (req, res, next) => {
   try {
     const { uuid, requestType } = req.params;
-    const dagData = await dagService.getDAG(uuid, requestType);
+    // Convert URL parameter from kebab-case to snake_case
+    const normalizedRequestType = requestType.replace(/-/g, '_');
+    const dagData = await dagService.getDAG(uuid, normalizedRequestType);
     
     res.json({
       success: true,
@@ -54,8 +56,11 @@ router.put('/:uuid/:requestType', validateUUID, validateDAGRequest, async (req, 
     const { uuid, requestType } = req.params;
     const dagData = req.body;
     
+    // Convert URL parameter from kebab-case to snake_case
+    const normalizedRequestType = requestType.replace(/-/g, '_');
+    
     // Ensure request type matches URL parameter
-    if (dagData.request_type !== requestType.replace('-', '_')) {
+    if (dagData.request_type !== normalizedRequestType) {
       return res.status(400).json({
         success: false,
         message: 'Request type in body must match URL parameter'
@@ -85,7 +90,9 @@ router.put('/:uuid/:requestType', validateUUID, validateDAGRequest, async (req, 
 router.delete('/:uuid/:requestType', validateUUID, async (req, res, next) => {
   try {
     const { uuid, requestType } = req.params;
-    await dagService.deleteDAG(uuid, requestType);
+    // Convert URL parameter from kebab-case to snake_case
+    const normalizedRequestType = requestType.replace(/-/g, '_');
+    await dagService.deleteDAG(uuid, normalizedRequestType);
     
     res.json({
       success: true,

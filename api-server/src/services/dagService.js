@@ -15,11 +15,9 @@ class DAGService {
       // Validate required fields
       this.validateDAGData(dagData);
       
-      // Generate YAML content
-      const yamlContent = yamlGenerator.generateDAGYAML(dagData);
-      
-      // Create file path with request type suffix
-      const dagName = `${dagData.contract_uuid}-${dagData.request_type.replace('_', '-')}`;
+      // Generate DAG name using acronyms to fit 40 char limit
+      const requestTypeAcronym = this.getRequestTypeAcronym(dagData.request_type);
+      const dagName = `${dagData.contract_uuid}-${requestTypeAcronym}`;
       const fileName = `${dagName}.yaml`;
       const filePath = path.join(DAG_DIR, fileName);
       
@@ -28,6 +26,9 @@ class DAGService {
       if (exists) {
         throw new DAGValidationError(`DAG with name ${dagName} already exists`);
       }
+      
+      // Generate YAML content with the DAG name
+      const yamlContent = yamlGenerator.generateDAGYAML(dagData, dagName);
       
       // Write file
       await fileManager.writeFile(filePath, yamlContent);
@@ -47,7 +48,8 @@ class DAGService {
    */
   async getDAG(contractUuid, requestType) {
     try {
-      const dagName = `${contractUuid}-${requestType.replace('_', '-')}`;
+      const requestTypeAcronym = this.getRequestTypeAcronym(requestType);
+      const dagName = `${contractUuid}-${requestTypeAcronym}`;
       const fileName = `${dagName}.yaml`;
       const filePath = path.join(DAG_DIR, fileName);
       
@@ -83,11 +85,9 @@ class DAGService {
         throw new DAGValidationError('Contract UUID in request body must match URL parameter');
       }
       
-      // Generate YAML content
-      const yamlContent = yamlGenerator.generateDAGYAML(dagData);
-      
-      // Create file path with request type suffix
-      const dagName = `${contractUuid}-${dagData.request_type.replace('_', '-')}`;
+      // Generate DAG name using acronyms to fit 40 char limit
+      const requestTypeAcronym = this.getRequestTypeAcronym(dagData.request_type);
+      const dagName = `${contractUuid}-${requestTypeAcronym}`;
       const fileName = `${dagName}.yaml`;
       const filePath = path.join(DAG_DIR, fileName);
       
@@ -96,6 +96,9 @@ class DAGService {
       if (!exists) {
         throw new DAGNotFoundError(`DAG with name ${dagName} not found`);
       }
+      
+      // Generate YAML content with the DAG name
+      const yamlContent = yamlGenerator.generateDAGYAML(dagData, dagName);
       
       // Write file
       await fileManager.writeFile(filePath, yamlContent);
@@ -115,7 +118,8 @@ class DAGService {
    */
   async deleteDAG(contractUuid, requestType) {
     try {
-      const dagName = `${contractUuid}-${requestType.replace('_', '-')}`;
+      const requestTypeAcronym = this.getRequestTypeAcronym(requestType);
+      const dagName = `${contractUuid}-${requestTypeAcronym}`;
       const fileName = `${dagName}.yaml`;
       const filePath = path.join(DAG_DIR, fileName);
       
@@ -134,6 +138,24 @@ class DAGService {
     } catch (error) {
       throw error;
     }
+  }
+
+  /**
+   * Get acronym for request type
+   */
+  getRequestTypeAcronym(requestType) {
+    const acronymMap = {
+      'generate_invoice': 'gi',
+      'seat_license': 'sl',
+      'seat_license_daily': 'sd'
+    };
+    
+    const acronym = acronymMap[requestType];
+    if (!acronym) {
+      throw new DAGValidationError(`Unknown request type: ${requestType}`);
+    }
+    
+    return acronym;
   }
 
   /**

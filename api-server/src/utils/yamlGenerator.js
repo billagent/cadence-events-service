@@ -4,8 +4,7 @@ class YAMLGenerator {
   /**
    * Generate DAG YAML content from request data
    */
-  generateDAGYAML(dagData) {
-    const dagName = `${dagData.contract_uuid}-${dagData.request_type.replace('_', '-')}`;
+  generateDAGYAML(dagData, dagName) {
     const dagTemplate = {
       name: dagName,
       description: dagData.description || `${dagData.request_type} workflow for contract ${dagData.contract_uuid}`,

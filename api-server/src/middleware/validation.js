@@ -6,7 +6,7 @@ const Joi = require('joi');
 const validateDAGRequest = (req, res, next) => {
   const schema = Joi.object({
     contract_uuid: Joi.string().uuid().required(),
-    request_type: Joi.string().valid('seat_license', 'generate_invoice').required(),
+    request_type: Joi.string().valid('seat_license', 'generate_invoice', 'seat_license_daily').required(),
     schedule: Joi.string().optional(),
     organization_uuid: Joi.string().uuid().required(),
     customer_id: Joi.string().required(),

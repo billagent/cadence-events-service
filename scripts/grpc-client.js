@@ -50,7 +50,7 @@ console.log(`Event time: ${eventTime}`);
 console.log(`Service: ${serviceHost}:${servicePort}`);
 
 // Validate request types - only seat_license and generate_invoice are supported
-const validRequestTypes = ['seat_license', 'generate_invoice'];
+const validRequestTypes = ['seat_license', 'generate_invoice', 'seat_license_daily'];
 if (!validRequestTypes.includes(requestType)) {
   console.error(`Invalid request type: ${requestType}`);
   console.error(`Valid request types: ${validRequestTypes.join(', ')}`);
