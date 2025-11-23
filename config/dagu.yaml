@@ -17,7 +17,7 @@ maxConcurrentRuns: 10
 
 # Optional: UI customization for internal use
 ui:
-  navbarTitle: "Cadence Events Service"
+  navbarTitle: "BillAgent Cadence Events Service"
   navbarColor: "#1976d2"
   hideNav: false
 
