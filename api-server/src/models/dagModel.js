@@ -38,7 +38,9 @@ class DAGData {
    * Validate DAG data
    */
   validate() {
-    const requiredFields = [
+    const validWidgetCadenceRequestTypes = ['seat_license_daily', 'seat_license'];
+    
+    const requiredWidgetCadenceFields = [
       'contract_uuid',
       'request_type',
       'organization_uuid',
@@ -48,16 +50,30 @@ class DAGData {
       'requestor_uuid',
       'tenant_uuid'
     ];
+    const validInvoiceRequestTypes = ['generate_invoice'];
+    const requiredInvoiceFields = [
+      'contract_uuid',
+      'request_type',
+      'organization_uuid',
+      'customer_id',
+      'requestor_uuid',
+      'tenant_uuid'
+    ];
 
-    for (const field of requiredFields) {
-      if (!this[field]) {
-        throw new DAGValidationError(`Missing required field: ${field}`);
+    if (validInvoiceRequestTypes.includes(this.request_type)) {
+      for (const field of requiredInvoiceFields) {
+        if (!this[field]) {
+          throw new DAGValidationError(`Missing required field for invoice_generation request: ${field}`);
+        }
       }
-    }
-
-    const validRequestTypes = ['seat_license', 'generate_invoice', 'seat_license_daily'];
-    if (!validRequestTypes.includes(this.request_type)) {
-      throw new DAGValidationError(`Invalid request_type. Must be one of: ${validRequestTypes.join(', ')}`);
+    } else if (validWidgetCadenceRequestTypes.includes(this.request_type)) {
+      for (const field of requiredWidgetCadenceFields) {
+        if (!this[field]) {
+          throw new DAGValidationError(`Missing required field for widget_cadence request: ${field}`);
+        }
+      }
+    } else {
+      throw new DAGValidationError(`Invalid request_type. Must be one of: ${validWidgetCadenceRequestTypes.join(', ')} for widget cadence requests or must be one of: ${validInvoiceRequestTypes.join(', ')} for invoice requests. Got: ${this.request_type}`);
     }
   }
 }
