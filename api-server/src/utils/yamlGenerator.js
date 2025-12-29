@@ -5,10 +5,45 @@ class YAMLGenerator {
    * Generate DAG YAML content from request data
    */
   generateDAGYAML(dagData, dagName) {
+    // Check to see if the incomming schedule is on the 29th of any month, the 30th of any month, or the 31st of any month if so then run 28-31
+    const schedule = dagData.schedule;
+    const scheduleDate = new Date(schedule);
+    const scheduleDay = scheduleDate.getDate();
+    const scheduleMonth = scheduleDate.getMonth();
+    const scheduleYear = scheduleDate.getFullYear();
+    if (scheduleDay === 29 || scheduleDay === 30 || scheduleDay === 31) {
+      dagData.schedule = "0 0 28-31 * *";
+    }
+    // if schedule day is 29 then create a precondition that run a bash script (this handles leap year feb and regular year feb)
+    // if today is 29 or if (today = 28th AND tomorrow is the first)
+    if (scheduleDay === 29) {
+    preconditionScript = `bash -lc "t=$(date +%d); tm=$(date -d tomorrow +%d); if [ \"$t\" = \"29\" ] || { [ \"$t\" = \"28\" ] && [ \"$tm\" = \"01\" ]; }; then echo true; else echo false; fi"`;
+    }
+    // if schedule day is 30 then create a precondition that run a bash script
+    // if today is 30 or if (today less than 30th AND tomorrow is the first)
+    if (scheduleDay === 30) {
+      preconditionScript = `bash -lc "t=$(date +%d); tm=$(date -d tomorrow +%d); if [ \"$t\" = \"30\" ] || { [ \"$tm\" = \"01\" ] && [ \"$t\" -lt 30 ]; }; then echo true; else echo false; fi"`;
+    }
+    // if schedule day is 31 then create a precondition that run a bash script
+    // if tomorrow is the first day of the month
+    if (scheduleDay === 31) {
+      preconditionScript = `bash -lc "if [ \"$(date -d tomorrow +%d)\" = \"01\" ]; then echo true; else echo false; fi""`;
+    }
+    // if schedule day is 28 or less then run a bash script
+    // that always returns true
+    if (scheduleDay <= 28) {
+      preconditionScript = `bash -lc "echo true"`;
+    }
+    
+
     const dagTemplate = {
       name: dagName,
       description: dagData.description || `${dagData.request_type} workflow for contract ${dagData.contract_uuid}`,
       schedule: dagData.schedule || "0 */5 * * *", // Default to every 5 minutes
+      precondition: {
+        condition: preconditionScript,
+        expected: "true"
+      },
       env: [
         'USAGE_TERM_MATCHER_HOST=usage-term-matcher-ps-grpc.billing-agreement-service-layer.svc.cluster.local',
         'USAGE_TERM_MATCHER_PORT=50051',
