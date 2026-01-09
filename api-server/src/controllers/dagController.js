@@ -23,6 +23,7 @@ router.post('/', validateDAGRequest, async (req, res, next) => {
       }
     });
   } catch (error) {
+    console.error('Error creating DAG:', error);
     next(error);
   }
 });
@@ -43,6 +44,7 @@ router.get('/:uuid/:requestType', validateUUID, async (req, res, next) => {
       data: dagData
     });
   } catch (error) {
+    console.error('Error getting DAG:', error);
     next(error);
   }
 });
@@ -79,6 +81,7 @@ router.put('/:uuid/:requestType', validateUUID, validateDAGRequest, async (req, 
       }
     });
   } catch (error) {
+    console.error('Error updating DAG:', error);
     next(error);
   }
 });
@@ -99,6 +102,7 @@ router.delete('/:uuid/:requestType', validateUUID, async (req, res, next) => {
       message: 'DAG deleted successfully'
     });
   } catch (error) {
+    console.error('Error deleting DAG:', error);
     next(error);
   }
 });

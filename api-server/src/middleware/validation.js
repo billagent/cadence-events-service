@@ -9,6 +9,7 @@ const validateDAGRequest = (req, res, next) => {
     request_type: Joi.string().valid('seat_license', 'generate_invoice', 'seat_license_daily').required(),
     schedule: Joi.string().optional(),
     organization_uuid: Joi.string().uuid().required(),
+    contract_timezone: Joi.string().required(),
     customer_id: Joi.string().required(),
     sku_id: Joi.string(),
     widget_uuid: Joi.string().uuid(),
@@ -21,9 +22,10 @@ const validateDAGRequest = (req, res, next) => {
 
   const { error } = schema.validate(req.body);
   if (error) {
+    console.error('Validation error:', error);
     return res.status(400).json({
       success: false,
-      message: 'Validation error',
+      message: 'Validation error ',
       errors: error.details.map(detail => detail.message)
     });
   }

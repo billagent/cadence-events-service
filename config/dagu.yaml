@@ -23,7 +23,7 @@ ui:
 
 # Optional: Logging configuration
 log:
-  level: info
+  level: error
   format: json
 
 # Scheduler configuration

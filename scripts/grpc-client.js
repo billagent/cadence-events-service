@@ -17,29 +17,43 @@ const requestType = process.env.REQUEST_TYPE;
 const widgetUuid = process.env.WIDGET_UUID;
 const requestorUuid = process.env.REQUESTOR_UUID;
 const tenantUuid = process.env.TENANT_UUID;
+const contractTimeZone = process.env.CONTRACT_TIMEZONE;
+const scheduleDay = process.env.SCHEDULE_DAY;
 
 // Extract event time from DAG_RUN_ID (format: YYYYMMDD_HHMMSS_XXXXXX)
 // DAG_RUN_ID is automatically set by Dagu for every step execution
 const dagRunId = process.env.DAG_RUN_ID;
-let eventTime;
 
-if (dagRunId) {
-  // Parse DAG_RUN_ID format: 20240115_140000_abc123
-  const match = dagRunId.match(/^(\d{4})(\d{2})(\d{2})_(\d{2})(\d{2})(\d{2})/);
-  if (match) {
-    const [, year, month, day, hour, minute, second] = match;
-    eventTime = new Date(`${year}-${month}-${day}T${hour}:${minute}:${second}.000Z`);
-    console.log(`Extracted event time from DAG_RUN_ID: ${eventTime.toISOString()}`);
-  } else {
-    console.warn(`Could not parse DAG_RUN_ID format: ${dagRunId}, using current time`);
-    eventTime = new Date();
-  }
-} else {
-  console.warn('DAG_RUN_ID not found, using current time');
-  // Normalize to beginning of day (remove hours, minutes, seconds)
-  const now = new Date();
-  eventTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
-}
+
+// if (dagRunId) {
+//   // Parse DAG_RUN_ID format: 20240115_140000_abc123
+//   const match = dagRunId.match(/^(\d{4})(\d{2})(\d{2})_(\d{2})(\d{2})(\d{2})/);
+//   if (match) {
+//     const [, year, month, day, hour, minute, second] = match;
+//     eventTime = new Date(`${year}-${month}-${day}T${hour}:${minute}:${second}.000Z`);
+//     console.log(`Extracted event time from DAG_RUN_ID: ${eventTime.toISOString()}`);
+//   } else {
+//     console.warn(`Could not parse DAG_RUN_ID format: ${dagRunId}, using current time`);
+//     eventTime = new Date();
+//   }
+// } else {
+//   console.warn('DAG_RUN_ID not found, using current time');
+//   // Normalize to beginning of day (remove hours, minutes, seconds)
+//   const now = new Date();
+//   eventTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+// }
+
+// dag run id is in the timezone of the current machine
+// the event time needs to be midnight the day in the timezone
+// the cron job determines te run time - it should be safe to use the current time
+// unless there was any delay in processing due to over scheduling (if there is enough delay to send it into the next day)
+
+// get the current time in utc and send in - the receiving service will normalize to midnight the day in the org timezone
+const eventTime = new Date()
+
+
+
+
 
 // Get service hostname and port from environment
 const serviceHost = process.env.USAGE_TERM_MATCHER_HOST || 'usage-term-matcher-ps-grpc.billing-agreement-service-layer.svc.cluster.local';
