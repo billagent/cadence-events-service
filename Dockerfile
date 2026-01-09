@@ -3,6 +3,14 @@ FROM node:lts-alpine
 # Install runtime dependencies
 RUN apk add --no-cache curl bash wget unzip
 
+
+# Set the desired timezone for the process and install tzdata
+ENV TZ=America/Los_Angeles
+RUN apk add --no-cache tzdata \
+ && ln -snf /usr/share/zoneinfo/$TZ /etc/localtime \
+ && echo $TZ > /etc/timezone
+
+
 # Install Dagu using official installation script (gets latest version automatically)
 RUN curl -L https://raw.githubusercontent.com/dagu-org/dagu/main/scripts/installer.sh | sh && \
     mv /root/.local/bin/dagu /usr/local/bin/dagu && \
