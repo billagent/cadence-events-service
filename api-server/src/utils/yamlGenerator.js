@@ -17,6 +17,7 @@ class YAMLGenerator {
     
     // Process each schedule for day 29-31 handling
     const processedSchedules = schedules.map(schedule => {
+      let rawCron = schedule; // Keep original for script parsing
       let newSchedule = schedule;
       let scheduleDay = null;
       
@@ -44,18 +45,28 @@ class YAMLGenerator {
       // If schedule is for day 29, 30, or 31, change to run on 28-31
       if (scheduleDay === 29 || scheduleDay === 30 || scheduleDay === 31) {
         newSchedule = "0 0 28-31 * *";
+        rawCron = "0 0 28-31 * *"; // Update raw cron too
       }
       
       // Add timezone to the schedule per https://docs.dagu.cloud/features/scheduling#timezone-support
-      newSchedule = `CRON_TZ=${contractTimeZone} ${newSchedule}`;
+      const dagSchedule = `CRON_TZ=${contractTimeZone} ${newSchedule}`;
       
-      return { schedule: newSchedule, scheduleDay };
+      return { 
+        schedule: dagSchedule,  // For Dagu YAML (with CRON_TZ)
+        rawCron: rawCron,       // For script parsing (without CRON_TZ)
+        scheduleDay 
+      };
     });
     
-    // Use array if multiple schedules, string if single
+    // Use array if multiple schedules, string if single (for Dagu YAML)
     const finalSchedule = processedSchedules.length === 1 
       ? processedSchedules[0].schedule 
       : processedSchedules.map(p => p.schedule);
+    
+    // Extract raw cron expressions for script (without CRON_TZ prefix)
+    const rawCronSchedules = processedSchedules.length === 1
+      ? processedSchedules[0].rawCron
+      : processedSchedules.map(p => p.rawCron);
     
     // Build precondition based on schedule day(s)
     let precondition;
@@ -138,9 +149,9 @@ class YAMLGenerator {
       `REQUESTOR_UUID=${dagData.requestor_uuid}`,
       `TENANT_UUID=${dagData.tenant_uuid}`,
       `CONTRACT_TIMEZONE=${contractTimeZone}`,
-      // Pass all schedules as JSON array so script can determine which one triggered
-      // This allows correct event_time calculation when multiple schedules exist
-      `SCHEDULES=${JSON.stringify(Array.isArray(finalSchedule) ? finalSchedule : [finalSchedule])}`
+      // Pass all schedules as JSON array (raw cron expressions without CRON_TZ prefix)
+      // so script can determine which one triggered and calculate correct event_time
+      `SCHEDULES=${JSON.stringify(Array.isArray(rawCronSchedules) ? rawCronSchedules : [rawCronSchedules])}`
     ];
 
     // Determine step command based on request type
