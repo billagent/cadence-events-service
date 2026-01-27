@@ -51,6 +51,7 @@ RUN chmod +x /docker-entrypoint.sh
 
 # Set permissions
 RUN chmod +x /opt/dagu/scripts/grpc-client.js
+RUN chmod +x /opt/dagu/scripts/grpc-client-process-contract-events.js
 RUN chown -R dagu:dagu /home/dagu/.config /home/dagu/dags
 
 # Set working directory

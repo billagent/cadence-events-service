@@ -17,7 +17,10 @@ class DAGService {
       
       // Generate DAG name using acronyms to fit 40 char limit
       const requestTypeAcronym = this.getRequestTypeAcronym(dagData.request_type);
-      const dagName = `${dagData.contract_uuid}-${requestTypeAcronym}`;
+      // For process_contract_events, acronym is empty string, so DAG name is just contract_uuid
+      const dagName = requestTypeAcronym === '' 
+        ? dagData.contract_uuid 
+        : `${dagData.contract_uuid}-${requestTypeAcronym}`;
       const fileName = `${dagName}.yaml`;
       const filePath = path.join(DAG_DIR, fileName);
       
@@ -49,7 +52,10 @@ class DAGService {
   async getDAG(contractUuid, requestType) {
     try {
       const requestTypeAcronym = this.getRequestTypeAcronym(requestType);
-      const dagName = `${contractUuid}-${requestTypeAcronym}`;
+      // For process_contract_events, acronym is empty string, so DAG name is just contract_uuid
+      const dagName = requestTypeAcronym === '' 
+        ? contractUuid 
+        : `${contractUuid}-${requestTypeAcronym}`;
       const fileName = `${dagName}.yaml`;
       const filePath = path.join(DAG_DIR, fileName);
       
@@ -87,7 +93,10 @@ class DAGService {
       
       // Generate DAG name using acronyms to fit 40 char limit
       const requestTypeAcronym = this.getRequestTypeAcronym(dagData.request_type);
-      const dagName = `${contractUuid}-${requestTypeAcronym}`;
+      // For process_contract_events, acronym is empty string, so DAG name is just contract_uuid
+      const dagName = requestTypeAcronym === '' 
+        ? contractUuid 
+        : `${contractUuid}-${requestTypeAcronym}`;
       const fileName = `${dagName}.yaml`;
       const filePath = path.join(DAG_DIR, fileName);
       
@@ -119,7 +128,10 @@ class DAGService {
   async deleteDAG(contractUuid, requestType) {
     try {
       const requestTypeAcronym = this.getRequestTypeAcronym(requestType);
-      const dagName = `${contractUuid}-${requestTypeAcronym}`;
+      // For process_contract_events, acronym is empty string, so DAG name is just contract_uuid
+      const dagName = requestTypeAcronym === '' 
+        ? contractUuid 
+        : `${contractUuid}-${requestTypeAcronym}`;
       const fileName = `${dagName}.yaml`;
       const filePath = path.join(DAG_DIR, fileName);
       
@@ -147,11 +159,12 @@ class DAGService {
     const acronymMap = {
       'generate_invoice': 'gi',
       'seat_license': 'sl',
-      'seat_license_daily': 'sd'
+      'seat_license_daily': 'sd',
+      'process_contract_events': ''  // Empty string for single DAG name (no suffix)
     };
     
     const acronym = acronymMap[requestType];
-    if (!acronym) {
+    if (acronym === undefined) {
       throw new DAGValidationError(`Unknown request type: ${requestType}`);
     }
     
@@ -184,8 +197,26 @@ class DAGService {
       'tenant_uuid'
     ];
     
+    // New validation for process_contract_events (no sku_id or widget_uuid required)
+    const validProcessContractEventsTypes = ['process_contract_events'];
+    const requiredProcessContractEventsFields = [
+      'contract_uuid',
+      'request_type',
+      'organization_uuid',
+      'customer_id',
+      'requestor_uuid',
+      'tenant_uuid',
+      'schedule'  // Can be string or array
+    ];
 
-    if (validInvoiceRequestTypes.includes(dagData.request_type)) {
+    if (validProcessContractEventsTypes.includes(dagData.request_type)) {
+      for (const field of requiredProcessContractEventsFields) {
+        if (!dagData[field]) {
+          throw new DAGValidationError(`Missing required field for process_contract_events request: ${field}`);
+        }
+      }
+      // sku_id and widget_uuid are NOT required for process_contract_events
+    } else if (validInvoiceRequestTypes.includes(dagData.request_type)) {
       for (const field of requiredInvoiceFields) {
         if (!dagData[field]) {
           throw new DAGValidationError(`Missing required field for invoice_generation request: ${field}`);
@@ -198,7 +229,7 @@ class DAGService {
         }
       }
     } else {
-      throw new DAGValidationError(`Invalid request_type. Must be one of: ${validWidgetCadenceRequestTypes.join(', ')} for widget cadence requests or must be one of: ${validInvoiceRequestTypes.join(', ')} for invoice requests. Got: ${dagData.request_type}`);
+      throw new DAGValidationError(`Invalid request_type. Must be one of: ${validWidgetCadenceRequestTypes.join(', ')} for widget cadence requests, ${validInvoiceRequestTypes.join(', ')} for invoice requests, or ${validProcessContractEventsTypes.join(', ')} for process contract events. Got: ${dagData.request_type}`);
     }
 
     // Validate UUID format (basic validation)
