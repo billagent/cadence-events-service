@@ -69,66 +69,53 @@ class YAMLGenerator {
       : processedSchedules.map(p => p.rawCron);
     
     // Build precondition based on schedule day(s)
+    // Check all schedules for end-of-month edge cases (days 28-31)
     let precondition;
-
-    if (processedSchedules.length === 1) {
-      // Single schedule - use timezone-aware logic
-      const scheduleDay = processedSchedules[0].scheduleDay;
+    
+    // Collect schedule days that need special handling (28, 29, 30, 31)
+    const edgeCaseDays = new Set();
+    processedSchedules.forEach(processed => {
+      if (processed.scheduleDay !== null && processed.scheduleDay >= 28 && processed.scheduleDay <= 31) {
+        edgeCaseDays.add(processed.scheduleDay);
+      }
+    });
+    
+    // If any schedule has an edge case day (28-31), create combined bash condition
+    if (edgeCaseDays.size > 0) {
+      const conditions = [];
       
-      // if schedule day is 29 then create a precondition (handles leap year feb and regular year feb)
-      // if today is 29 OR (today is 28 AND tomorrow is the first)
-      if (scheduleDay === 29) {
-        // Construct bash command to check if today is 29th OR (today is 28th AND tomorrow is 1st)
-        // BusyBox-compatible: calculate tomorrow by adding 86400 seconds to current epoch time
-        const bashCondition = `\`bash -lc 't=$(TZ="${contractTimeZone}" date +%d); tm=$(TZ="${contractTimeZone}" date -d @$(($(TZ="${contractTimeZone}" date +%s) + 86400)) +%d); if [ "$t" = "29" ] || { [ "$t" = "28" ] && [ "$tm" = "01" ]; }; then echo true; else echo false; fi'\``;
-
-        precondition = {
-          condition: bashCondition,
-          expected: "true"
-        };
+      // Build conditions for each edge case day found across all schedules
+      if (edgeCaseDays.has(29)) {
+        // Day 29: today is 29th OR (today is 28th AND tomorrow is 1st)
+        conditions.push('[ "$t" = "29" ] || { [ "$t" = "28" ] && [ "$tm" = "01" ]; }');
       }
-      // if schedule day is 30 then create a precondition
-      // if today is 30 OR (tomorrow is 1st AND today < 30)
-      else if (scheduleDay === 30) {
-        // Construct bash command to check if today is 30th OR (tomorrow is 1st AND today < 30)
-        // BusyBox-compatible: calculate tomorrow by adding 86400 seconds to current epoch time
-        const bashCondition = `\`bash -lc 't=$(TZ="${contractTimeZone}" date +%d); tm=$(TZ="${contractTimeZone}" date -d @$(($(TZ="${contractTimeZone}" date +%s) + 86400)) +%d); if [ "$t" = "30" ] || { [ "$tm" = "01" ] && [ "$t" -lt 30 ]; }; then echo true; else echo false; fi'\``;
-
-        precondition = {
-          condition: bashCondition,
-          expected: "true"
-        };
+      
+      if (edgeCaseDays.has(30)) {
+        // Day 30: today is 30th OR (tomorrow is 1st AND today < 30)
+        conditions.push('[ "$t" = "30" ] || { [ "$tm" = "01" ] && [ "$t" -lt 30 ]; }');
       }
-      // if schedule day is 31 then create a precondition
-      // if tomorrow is the first day of the month
-      else if (scheduleDay === 31) {
-        // Construct bash command to check if tomorrow is the first day of the month
-        // BusyBox-compatible: calculate tomorrow by adding 86400 seconds to current epoch time
-        const bashCondition = `\`bash -lc 'tm=$(TZ="${contractTimeZone}" date -d @$(($(TZ="${contractTimeZone}" date +%s) + 86400)) +%d); if [ "$tm" = "01" ]; then echo true; else echo false; fi'\``;
-
-        precondition = {
-          condition: bashCondition,
-          expected: "true"
-        };
+      
+      if (edgeCaseDays.has(31)) {
+        // Day 31: tomorrow is 1st (last day of month)
+        conditions.push('[ "$tm" = "01" ]');
       }
-      // if schedule day is 28 or less, always run (no precondition needed)
-      // For days <= 28, we can either omit the precondition or use a simple always-true condition
-      else if (scheduleDay !== null && scheduleDay <= 28) {
-        precondition = {
-          condition: "`bash -lc 'echo true'`",
-          expected: "true"
-        };
+      
+      if (edgeCaseDays.has(28)) {
+        // Day 28: today is 28th OR (tomorrow is 1st AND today < 28) - handles months with 28 days
+        conditions.push('[ "$t" = "28" ] || { [ "$tm" = "01" ] && [ "$t" -lt 28 ]; }');
       }
-      // Default fallback for any edge cases (null scheduleDay or other values)
-      else {
-        precondition = {
-          condition: "`bash -lc 'echo true'`",
-          expected: "true"
-        };
-      }
+      
+      // Combine all conditions with OR logic
+      // If any condition is true, the precondition passes
+      const combinedCondition = conditions.join(' || ');
+      const bashCondition = `\`bash -lc 't=$(TZ="${contractTimeZone}" date +%d); tm=$(TZ="${contractTimeZone}" date -d @$(($(TZ="${contractTimeZone}" date +%s) + 86400)) +%d); if ${combinedCondition}; then echo true; else echo false; fi'\``;
+      
+      precondition = {
+        condition: bashCondition,
+        expected: "true"
+      };
     } else {
-      // Multiple schedules - use a combined precondition
-      // For simplicity, use always-true since Dagu will handle schedule matching
+      // No edge case days (all schedules are for days 1-27) - always run
       precondition = {
         condition: "`bash -lc 'echo true'`",
         expected: "true"
