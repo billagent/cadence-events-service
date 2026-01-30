@@ -51,18 +51,6 @@ class FileManager {
       throw new Error(`Failed to delete file ${filePath}: ${error.message}`);
     }
   }
-
-  /**
-   * List files in directory
-   */
-  async listFiles(dirPath) {
-    try {
-      const files = await fs.readdir(dirPath);
-      return files.filter(file => file.endsWith('.yaml'));
-    } catch (error) {
-      throw new Error(`Failed to list files in ${dirPath}: ${error.message}`);
-    }
-  }
 }
 
 module.exports = new FileManager();

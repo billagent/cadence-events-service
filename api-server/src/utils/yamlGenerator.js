@@ -141,14 +141,9 @@ class YAMLGenerator {
       `SCHEDULES=${JSON.stringify(Array.isArray(rawCronSchedules) ? rawCronSchedules : [rawCronSchedules])}`
     ];
 
-    // Determine step command based on request type
-    const stepCommand = dagData.request_type === 'process_contract_events'
-      ? '/opt/dagu/scripts/grpc-client-process-contract-events.js'
-      : '/opt/dagu/scripts/grpc-client.js';
-    
-    const stepName = dagData.request_type === 'process_contract_events'
-      ? 'call-process-contract-events'
-      : 'call-usage-term-matcher';
+    // Only process_contract_events is supported; always use ProcessContractEvents script
+    const stepCommand = '/opt/dagu/scripts/grpc-client-process-contract-events.js';
+    const stepName = 'call-process-contract-events';
 
     const dagTemplate = {
       name: dagName,

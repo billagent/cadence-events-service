@@ -1,5 +1,5 @@
 # Simple Makefile for Dagu local testing
-.PHONY: build build-amd64 build-multi run stop logs clean test push
+.PHONY: build build-amd64 build-multi run stop logs clean test push telepresence-restart
 
 # Build the Docker image specifically for AMD64 (Azure deployment)
 build:
@@ -19,7 +19,12 @@ push:
 	docker build --platform linux/amd64 -t subscripifycontreg.azurecr.io/prod/cadence-events-service:latest .
 	docker push subscripifycontreg.azurecr.io/prod/cadence-events-service:latest
 
-# Run the container locally
+# Quit and restart Telepresence in Docker mode (run in a dedicated terminal; leave it running before "make run")
+telepresence-restart:
+	telepresence quit || true
+	telepresence connect --docker
+
+# Run the container locally (requires: run "telepresence connect --docker" first in another terminal)
 run:
 	telepresence docker-run --rm \
 		--name cadence-events-local \

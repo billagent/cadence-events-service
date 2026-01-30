@@ -153,53 +153,26 @@ class DAGService {
   }
 
   /**
-   * Get acronym for request type
+   * Get acronym for request type.
+   * Only process_contract_events is supported (empty string = DAG name is contract_uuid only).
    */
   getRequestTypeAcronym(requestType) {
-    const acronymMap = {
-      'generate_invoice': 'gi',
-      'seat_license': 'sl',
-      'seat_license_daily': 'sd',
-      'process_contract_events': ''  // Empty string for single DAG name (no suffix)
-    };
-    
-    const acronym = acronymMap[requestType];
-    if (acronym === undefined) {
-      throw new DAGValidationError(`Unknown request type: ${requestType}`);
+    if (requestType !== 'process_contract_events') {
+      throw new DAGValidationError(`Only request type 'process_contract_events' is supported. Got: ${requestType}`);
     }
-    
-    return acronym;
+    return '';
   }
 
   /**
-   * Validate DAG data
+   * Validate DAG data.
+   * Only request_type 'process_contract_events' is supported.
    */
   validateDAGData(dagData) {
-    const validWidgetCadenceRequestTypes = ['seat_license_daily', 'seat_license'];
-    
-    const requiredWidgetCadenceFields = [
-      'contract_uuid',
-      'request_type',
-      'organization_uuid',
-      'customer_id',
-      'sku_id',
-      'widget_uuid',
-      'requestor_uuid',
-      'tenant_uuid'
-    ];
-    const validInvoiceRequestTypes = ['generate_invoice'];
-    const requiredInvoiceFields = [
-      'contract_uuid',
-      'request_type',
-      'organization_uuid',
-      'customer_id',
-      'requestor_uuid',
-      'tenant_uuid'
-    ];
-    
-    // New validation for process_contract_events (no sku_id or widget_uuid required)
-    const validProcessContractEventsTypes = ['process_contract_events'];
-    const requiredProcessContractEventsFields = [
+    if (dagData.request_type !== 'process_contract_events') {
+      throw new DAGValidationError(`Only request type 'process_contract_events' is supported. Got: ${dagData.request_type}`);
+    }
+
+    const requiredFields = [
       'contract_uuid',
       'request_type',
       'organization_uuid',
@@ -209,27 +182,10 @@ class DAGService {
       'schedule'  // Can be string or array
     ];
 
-    if (validProcessContractEventsTypes.includes(dagData.request_type)) {
-      for (const field of requiredProcessContractEventsFields) {
-        if (!dagData[field]) {
-          throw new DAGValidationError(`Missing required field for process_contract_events request: ${field}`);
-        }
+    for (const field of requiredFields) {
+      if (!dagData[field]) {
+        throw new DAGValidationError(`Missing required field for process_contract_events request: ${field}`);
       }
-      // sku_id and widget_uuid are NOT required for process_contract_events
-    } else if (validInvoiceRequestTypes.includes(dagData.request_type)) {
-      for (const field of requiredInvoiceFields) {
-        if (!dagData[field]) {
-          throw new DAGValidationError(`Missing required field for invoice_generation request: ${field}`);
-        }
-      }
-    } else if (validWidgetCadenceRequestTypes.includes(dagData.request_type)) {
-      for (const field of requiredWidgetCadenceFields) {
-        if (!dagData[field]) {
-          throw new DAGValidationError(`Missing required field for widget_cadence request: ${field}`);
-        }
-      }
-    } else {
-      throw new DAGValidationError(`Invalid request_type. Must be one of: ${validWidgetCadenceRequestTypes.join(', ')} for widget cadence requests, ${validInvoiceRequestTypes.join(', ')} for invoice requests, or ${validProcessContractEventsTypes.join(', ')} for process contract events. Got: ${dagData.request_type}`);
     }
 
     // Validate UUID format (basic validation)

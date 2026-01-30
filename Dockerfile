@@ -49,8 +49,7 @@ COPY config/dagu.yaml /home/dagu/.config/dagu/config.yaml
 COPY docker-entrypoint.sh /docker-entrypoint.sh
 RUN chmod +x /docker-entrypoint.sh
 
-# Set permissions
-RUN chmod +x /opt/dagu/scripts/grpc-client.js
+# Set permissions (only process_contract_events script; grpc-client.js removed in Tier 2 cleanup)
 RUN chmod +x /opt/dagu/scripts/grpc-client-process-contract-events.js
 RUN chown -R dagu:dagu /home/dagu/.config /home/dagu/dags
 
